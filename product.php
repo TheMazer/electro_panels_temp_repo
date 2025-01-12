@@ -1,34 +1,51 @@
+<?php
+// Подключение к базе данных
+try {
+    $pdo = new PDO('mysql:host=localhost;dbname=your_database_name;charset=utf8', 'username', 'password');
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Ошибка подключения к базе данных: " . $e->getMessage());
+}
+
+// Извлечение данных о продукте
+$productQuery = $pdo->prepare("SELECT * FROM products WHERE id = :productId");
+$productQuery->execute(['productId' => 1]); // Предполагается, что id продукта = 1
+$product = $productQuery->fetch(PDO::FETCH_ASSOC);
+
+if (!$product) {
+    die("Продукт не найден.");
+}
+
+// Извлечение характеристик продукта
+$charsQuery = $pdo->prepare("SELECT * FROM product_features WHERE product_id = :productId");
+$charsQuery->execute(['productId' => $product['id']]);
+$features = $charsQuery->fetchAll(PDO::FETCH_ASSOC);
+?>
+
 <!DOCTYPE html>
 <html lang="ru">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Noto+Sans+Korean:wght@400&display=swap"
-            rel="stylesheet"
-        />
-        <title>ЩитЭнерго.ru</title>
-        <link rel="stylesheet" href="src\css\styles.css" />
-        <link rel="stylesheet" href="src\css\product_page.css" />
-        <link rel="icon" href="src\img\icons\logo2.png" type="image/x-icon" />
-        
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
-    </head>
-    <body>
-		<header class="header">
-			<div class="container">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Korean:wght@400&display=swap" rel="stylesheet" />
+    <title><?= htmlspecialchars($product['name']) ?> - ЩитЭнерго.ru</title>
+    <link rel="stylesheet" href="src/css/styles.css" />
+    <link rel="stylesheet" href="src/css/product_page.css" />
+    <link rel="icon" href="src/img/icons/logo2.png" type="image/x-icon" />
+</head>
+<body>
+<header class="header">
+    <div class="container">
 				<div class="heder-box">
-					<div class="header-logo">
+            <div class="header-logo">
 						<img src="src\img\icons\logo.png" style="width: 50px" alt="логотип" />
 						<a href="index.html"> ЩитЭнерго.ru </a>
 						<link
 							href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
 							rel="stylesheet"
 						/>
-					</div>
-					<div class="header-controls">
+            </div>
+            <div class="header-controls">
 						<button class="header-burger">Menu</button>
 						<!-- Кнопка для мобильного меню -->
 						<div class="desktop-controls">
@@ -129,11 +146,11 @@
 
 					<div class="header-burger">
 						<img src="src\img\icons\menu.png" style="width: 30px" alt="menu" />
-					</div>
-				</div>
-			</div>
-		</header>
-		<main>
+            </div>
+        </div>
+    </div>
+</header>
+<main>
 			<section class="Search">
 				<div class="container">
 					<div class="search-box">
@@ -144,81 +161,42 @@
 					</div>
 				</div>
 			</section>
-			<section class="content">
-				<div class="container">
-					<div class="content-box">
-						<div class="content-main">
-							<h2 class="contant-main__title">О товаре</h2>
+    <section class="content">
+        <div class="container">
+            <div class="content-box">
+                <div class="content-main">
+                    <h2 class="content-main__title">О товаре</h2>
+                    <div class="product-info-container">
+                        <div class="product-col">
+                            <img class="product-image" src="<?= htmlspecialchars($product['image_url']) ?>" alt="Изображение товара">
+                        </div>
+                        <div class="product-col">
+                            <h1><?= htmlspecialchars($product['name']) ?></h1>
+                            <span class="price"><?= htmlspecialchars($product['price']) ?> ₽</span>
+                            <p><?= htmlspecialchars($product['description']) ?></p>
+                            <a class="btn btn-primary" href="contact.php">Написать нам</a>
+                            <a class="btn btn-underline" href="#chars">К характеристикам</a>
+                        </div>
+                        <div>
+                            <h2 id="chars" class="chars-title">Характеристики</h2>
+                            <table>
+                                <tbody>
+                                <?php foreach ($features as $feature): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($feature['feature_name']) ?></td>
+                                        <td><?= htmlspecialchars($feature['feature_value']) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
-							<div class="product-info-container">
-                                <div class="product-col">
-                                    <img class="product-image" src="src\img\thumbs\щит1.jpg">
-                                </div>
-                                <div class="product-col">
-                                    <h1>Щит электрический бытовой 380 Вольт c автоматикой (Для частных домов)</h1>
-                                    <span class="price">60 000 ₽</span>
-                                    <desc>Электрический щит 380 В с автоматикой для частных домов – надежное решение для распределения электричества. Оснащен автоматами защиты, предотвращает перегрузки и короткие замыкания.</desc>
-                                    <a class="btn btn-primary" href="">Написать нам</a>
-                                    <a class="btn btn-underline" href="#chars">К характеристикам</a>
-                                </div>
-                                <div>
-                                    <h2 id="chars" class="chars-title">Характеристики</h2>
-                                    <table>
-                                        <tbody>  
-                                            <tr>  
-                                                <td>Напряжение</td>  
-                                                <td>380 В</td>  
-                                            </tr>  
-                                            <tr>  
-                                                <td>Максимальная нагрузка</td>  
-                                                <td>до 63 А</td>  
-                                            </tr>  
-                                            <tr>  
-                                                <td>Количество автоматов</td>  
-                                                <td>6 - 12 (в зависимости от модели)</td>  
-                                            </tr>  
-                                            <tr>  
-                                                <td>Тип автоматов</td>  
-                                                <td>С (средняя по кривой срабатывания)</td>  
-                                            </tr>  
-                                            <tr>  
-                                                <td>Защита от перегрузки</td>  
-                                                <td>Да</td>  
-                                            </tr>  
-                                            <tr>  
-                                                <td>Защита от короткого замыкания</td>  
-                                                <td>Да</td>  
-                                            </tr>  
-                                            <tr>  
-                                                <td>Размеры</td>  
-                                                <td>(Ш x В x Г) 400 x 600 x 200 мм</td>  
-                                            </tr>  
-                                            <tr>  
-                                                <td>Материал корпуса</td>  
-                                                <td>Металл/пластик</td>  
-                                            </tr>  
-                                            <tr>  
-                                                <td>Степень защиты</td>  
-                                                <td>IP31</td>  
-                                            </tr>  
-                                            <tr>  
-                                                <td>Установка</td>  
-                                                <td>Настенная</td>  
-                                            </tr>  
-                                            <tr>  
-                                                <td>Температурный диапазон</td>  
-                                                <td>-20°C до +40°C</td>  
-                                            </tr>  
-                                        </tbody>  
-                                    </table>
-                                </div>
-							</div>
-						</div>
-
-						<div class="content-side">
-							<h3 class="content-side__title">Сервисы и услуги</h3>
-
-							<div class="content-side__box">
+                <div class="content-side">
+                    <h3 class="content-side__title">Сервисы и услуги</h3>
+                    
+                    <div class="content-side__box">
 								<div class="content-side__list">
 									<div class="content-side__list-item">
 										<img
@@ -231,7 +209,7 @@
 										<p class="content-side__list-item--text">
 											Оперативная и быстрая доставка щитов по всей стране.
 										</p>
-									</div>
+                    </div>
 									<div class="content-side__list-item">
 										<img
 											class="content-side__list-item--img"
