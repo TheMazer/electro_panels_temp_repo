@@ -1,25 +1,38 @@
 <?php
-// Подключение к базе данных
-try {
-    $pdo = new PDO('mysql:host=localhost;dbname=your_database_name;charset=utf8', 'username', 'password');
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("Ошибка подключения к базе данных: " . $e->getMessage());
-}
+	// Подключение к базе данных
+	$conn = new mysqli('localhost', 'root', '', 'shieldEnergo');
 
-// Извлечение данных о продукте
-$productQuery = $pdo->prepare("SELECT * FROM products WHERE id = :productId");
-$productQuery->execute(['productId' => 1]); // Предполагается, что id продукта = 1
-$product = $productQuery->fetch(PDO::FETCH_ASSOC);
+	// Проверка подключения
+	if ($conn->connect_error) {
+		die("Ошибка подключения: " . $conn->connect_error);
+	}
 
-if (!$product) {
-    die("Продукт не найден.");
-}
+	// Извлечение данных о продукте
+	// Получаем ID из URL  
+	$productId = isset($_GET['id']) ? intval($_GET['id']) : 0;  
 
-// Извлечение характеристик продукта
-$charsQuery = $pdo->prepare("SELECT * FROM product_features WHERE product_id = :productId");
-$charsQuery->execute(['productId' => $product['id']]);
-$features = $charsQuery->fetchAll(PDO::FETCH_ASSOC);
+	// Подготовка SQL-запроса  
+	$productSql = "SELECT * FROM products WHERE id = ?";  
+	$productStmt = $conn->prepare($productSql);  
+	$productStmt->bind_param("i", $productId); // связываем параметр  
+	$productStmt->execute(); // выполняем запрос  
+	$result = $productStmt->get_result(); // получаем результат
+
+	if ($productStmt) {
+		$productStmt->bind_param("i", $productId);
+		$productStmt->execute();
+		$productResult = $productStmt->get_result();
+		$product = $productResult->fetch_assoc();
+		$productStmt->close();
+	} else {
+		die("Ошибка в запросе: " . $conn->error);
+	}
+
+	if (!$product) {
+		die("Продукт не найден.");
+	}
+
+	$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -32,6 +45,10 @@ $features = $charsQuery->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="src/css/styles.css" />
     <link rel="stylesheet" href="src/css/product_page.css" />
     <link rel="icon" href="src/img/icons/logo2.png" type="image/x-icon" />
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
 </head>
 <body>
 <header class="header">
@@ -168,27 +185,34 @@ $features = $charsQuery->fetchAll(PDO::FETCH_ASSOC);
                     <h2 class="content-main__title">О товаре</h2>
                     <div class="product-info-container">
                         <div class="product-col">
-                            <img class="product-image" src="<?= htmlspecialchars($product['image_url']) ?>" alt="Изображение товара">
+                            <img class="product-image" src="<?= htmlspecialchars('src/img/thumbs/'. $product['img']) ?>" alt="Изображение товара">
                         </div>
                         <div class="product-col">
-                            <h1><?= htmlspecialchars($product['name']) ?></h1>
+                            <h1><?= htmlspecialchars($product['title']) ?></h1>
                             <span class="price"><?= htmlspecialchars($product['price']) ?> ₽</span>
-                            <p><?= htmlspecialchars($product['description']) ?></p>
-                            <a class="btn btn-primary" href="contact.php">Написать нам</a>
+                            <desc><?= htmlspecialchars($product['description']) ?></desc>
+                            <a class="btn btn-primary" href="https://t.me">Написать нам</a>
                             <a class="btn btn-underline" href="#chars">К характеристикам</a>
                         </div>
                         <div>
                             <h2 id="chars" class="chars-title">Характеристики</h2>
-                            <table>
-                                <tbody>
-                                <?php foreach ($features as $feature): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($feature['feature_name']) ?></td>
-                                        <td><?= htmlspecialchars($feature['feature_value']) ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                </tbody>
-                            </table>
+                            <?php
+                                echo '<table>
+									<tbody>
+										<tr><td>Напряжение</td><td>' . $product['voltage'] . '</td></tr>
+										<tr><td>Максимальная нагрузка</td><td>' . $product['max_load'] . '</td></tr>
+										<tr><td>Количество автоматов</td><td>' . $product['breaker_count'] . '</td></tr>
+										<tr><td>Тип автоматов</td><td>' . $product['breaker_type'] . '</td></tr>
+										<tr><td>Защита от перегрузки</td><td>' . $product['overload_protection'] . '</td></tr>
+										<tr><td>Защита от короткого замыкания</td><td>' . $product['short_circuit_protection'] . '</td></tr>
+										<tr><td>Размеры</td><td>' . $product['dimensions'] . '</td></tr>
+										<tr><td>Материал корпуса</td><td>' . $product['case_material'] . '</td></tr>
+										<tr><td>Степень защиты</td><td>' . $product['protection_level'] . '</td></tr>
+										<tr><td>Установка</td><td>' . $product['installation_type'] . '</td></tr>
+										<tr><td>Температурный диапазон</td><td>' . $product['temperature_range'] . '</td></tr>
+									</tbody>
+								</table>';
+							?>
                         </div>
                     </div>
                 </div>
